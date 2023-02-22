@@ -1,0 +1,16 @@
+spring:
+    #  profiles:
+    #    active: lcoal
+    config:
+        activate:
+            on-profile:
+                - dev
+    data:
+        mongodb:
+            uri: mongodb+srv://lijinming:lijinmin@ljm0.e9q9sme.mongodb.net/?retryWrites=true&w=majority
+server:
+    port: 9002
+
+
+
+
