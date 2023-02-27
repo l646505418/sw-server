@@ -5,5 +5,7 @@ import com.schedulework.server.vo.serverResponse;
 
 public interface workflowService {
     public abstract serverResponse registWorkflow(workflow addWorkflow);
-    public abstract serverResponse updateWorkflow(workflow modifyWorkflow);
+    public abstract serverResponse updateWorkflow(workflow updateWorkflow);
+    public abstract serverResponse startWorkflow(workflow runWorkflow);
+    public abstract serverResponse modifyWorkflow(workflow modifyWorkflow);
 }

@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.HashMap;
+
 /**
  * @author:Li Jinming
  * @Description:
@@ -21,5 +23,5 @@ public class workflow {
     private String serviceName;
     private String projectName;
     private Long ownerId;
-    private runTimeJob[] ownJobs;
+    private HashMap<String,runTimeJob> ownJobs;
 }

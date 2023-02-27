@@ -2,6 +2,8 @@ package com.schedulework.server.service;
 
 
 import com.schedulework.server.entity.job;
+import com.schedulework.server.entity.runTimeJob;
+import com.schedulework.server.entity.workflow;
 import com.schedulework.server.vo.responseEnum;
 import com.schedulework.server.vo.serverResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +26,6 @@ public class jobServiceImpl implements jobService{
     private static String jobCollection="jobInfo";
     @Autowired
     MongoTemplate mongoTemplate;
-
     @Override
     public serverResponse registJob(job addJob) {
         log.info("start to persist db for job");
@@ -48,6 +49,13 @@ public class jobServiceImpl implements jobService{
         update.set("outputParams",modifyJob.getOutputParams());
         mongoTemplate.upsert(query,update,job.class,jobCollection);
         return new serverResponse(responseEnum.UJOb_SUCCESS.getStatusCode(),responseEnum.UJOb_SUCCESS.getStatusDescription(),modifyJob);
+    }
+
+    @Override
+    public workflow updateStatus(runTimeJob updateJob) {
+        workflow currentWorkFlow =updateJob.getWorkflow();
+        currentWorkFlow.getOwnJobs().get(updateJob.getJob().getJobName()).setStatus(updateJob.getStatus());
+        return currentWorkFlow;
     }
 
 }
