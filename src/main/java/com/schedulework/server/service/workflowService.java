@@ -8,4 +8,5 @@ public interface workflowService {
     public abstract serverResponse updateWorkflow(workflow updateWorkflow);
     public abstract serverResponse startWorkflow(workflow runWorkflow);
     public abstract serverResponse modifyWorkflow(workflow modifyWorkflow);
+    public abstract serverResponse finishWorkflow(workflow finishWorkflow);
 }

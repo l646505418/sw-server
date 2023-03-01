@@ -127,11 +127,67 @@ public class workflowServiceImpl implements workflowService{
 
     }
 
+    @Override
+    public serverResponse finishWorkflow(workflow finishWorkflow) {
+        log.info("finishing the thread"+finishWorkflow.getWorkflowName());
+        workflow initWorkflow=finishWorkflow;
+        initWorkflow.setWorkflowName(initWorkflow.getWorkflowName().split("_")[0]);
+        String key=generateRedisKey(initWorkflow);
+        String keyThread=generateRedisKey(finishWorkflow);
+        CompletableFuture<Set> cacheInit=CompletableFuture.supplyAsync(()->{
+            return redisTemplate.opsForSet().members(key);
+        });
+        CompletableFuture<Set> cacheNow=CompletableFuture.supplyAsync(()->{
+            return redisTemplate.opsForSet().members(keyThread);
+        });
+        if(cacheNow.join().size()==0){
+            log.error(String.format("cannot found the thread:%s",keyThread));
+            return new serverResponse(responseEnum.FWORKFLOW_FAILED.getStatusCode(),responseEnum.FWORKFLOW_FAILED.getStatusDescription(),"no thread found");
+        }
+        if(cacheInit.join().toArray()[0].equals(initWorkflow.getWorkflowName())){
+            log.info("persist in DB and delete in cache,no need other performs");
+        }
+        else{
+            log.info(String.format("need add whole workflow:%s in DB and cache",initWorkflow.getWorkflowName()));
+            initWorkflow.getOwnJobs().entrySet().stream().forEach(stringrunTimeJobEntry -> stringrunTimeJobEntry
+                    .setValue(stringrunTimeJobEntry.getValue().changeStatus(JobStatus.PENDING)));
+            while(redisTemplate.opsForValue().setIfAbsent(key+"-lock",1,30,TimeUnit.SECONDS)){
+                redisTemplate.opsForSet().pop(key);
+                initWorkflow.setStatus("REGIST");
+                CompletableFuture.runAsync(()->{
+                    String currCacheWL=gson.toJson(initWorkflow);
+                    log.info(String.format("start to persist cache for workflow:%s",key));
+                    redisTemplate.opsForSet().add(key, initWorkflow.getWorkflowName());
+                    redisTemplate.opsForSet().add(key,currCacheWL);
+                });
+                CompletableFuture.runAsync(() ->{
+                    log.info(String.format("start to persist DB for workflow:%s",key));
+                    mongoTemplate.insert(initWorkflow, workflowCollection);
+                });
+
+                redisTemplate.delete(key+"-lock");
+            }
+        }
+        finishWorkflow.setStatus("FINISH");
+        CompletableFuture.runAsync(()->{
+            redisTemplate.opsForSet().pop(keyThread);
+        });
+        CompletableFuture.runAsync(()->{
+            Query query=new Query();
+            query.addCriteria(Criteria.where("ownerId").is(finishWorkflow.getOwnerId())
+                    .and("projectName").is(finishWorkflow.getProjectName())
+                    .and("serviceName").is(finishWorkflow.getServiceName())
+                    .and("workflowName").is(finishWorkflow.getWorkflowName()));
+            Update update=new Update();
+            update.set("status",finishWorkflow.getStatus());
+            mongoTemplate.upsert(query,update, workflow.class,workflowCollection);
+        });
+ return new serverResponse(responseEnum.FWORKFLOW_SUCCESS.getStatusCode(),responseEnum.FWORKFLOW_SUCCESS.getStatusDescription(),null);
+
+    }
 
 
-
-
-//TODO:1. use a util class to encapsulation Gson functions 2. create different handler and a handler manager
+    //TODO:1. use a util class to encapsulation Gson functions 2. create different handler and a handler manager
     @Override
     public serverResponse startWorkflow(workflow runWorkflow) {
         String key=generateRedisKey(runWorkflow);
@@ -166,7 +222,7 @@ public class workflowServiceImpl implements workflowService{
                 workflow currentWorkFlow=runWorkflow;
                 String keyNow=generateRedisKey(currentWorkFlow);
                 currentWorkFlow.setWorkflowName(currentWorkFlow.getWorkflowName()+"_0");
-//                currentWorkFlow.getOwnJobs()[0].setStatus(JobStatus.PROCESSING);
+                currentWorkFlow.setStatus(JobStatus.PROCESSING);
                 CompletableFuture.runAsync(()->{
                     log.info(String.format("start to persist cache for thread:%s",currentWorkFlow.getWorkflowName()));
                     String cacheWL=gson.toJson(currentWorkFlow);
@@ -191,7 +247,7 @@ public class workflowServiceImpl implements workflowService{
                     Object WLNum=redisTemplate.opsForValue().get(key+"-num");
                     workflow currWorkflow=finalMaintainWorkflow;
                     currWorkflow.setWorkflowName(finalMaintainWorkflow.getWorkflowName()+"_"+(String)WLNum);
-//                    currWorkflow.getOwnJobs()[0].setStatus(JobStatus.PROCESSING);
+                    currWorkflow.setStatus(JobStatus.PROCESSING);
                     String  keyNow=generateRedisKey(currWorkflow);
                     CompletableFuture.runAsync(()->{
                         String currCacheWL=gson.toJson(currWorkflow);
@@ -217,9 +273,12 @@ public class workflowServiceImpl implements workflowService{
                 while (redisTemplate.opsForValue().setIfAbsent(key+"-lock", 1, 30, TimeUnit.SECONDS)){
                     maintainWorkflow=gson.fromJson((String)cacheRes.join().toArray()[1],workflow.class);
                     workflow finalMaintainWorkflow = maintainWorkflow;
-                    Object WLNum=redisTemplate.opsForValue().get(key+"-num");
-                    finalMaintainWorkflow.setWorkflowName(maintainWorkflow.getWorkflowName()+"_"+(String)WLNum);
-//                    finalMaintainWorkflow.getOwnJobs()[0].setStatus(JobStatus.PROCESSING);
+                    if(maintainWorkflow.getStatus().equals("REGIST")) {
+                        Object WLNum = redisTemplate.opsForValue().get(key + "-num");
+                        redisTemplate.opsForValue().increment(key + "-num", (Long) WLNum);
+                        finalMaintainWorkflow.setWorkflowName(maintainWorkflow.getWorkflowName() + "_" + (String) WLNum);
+                    }
+                    finalMaintainWorkflow.setStatus(JobStatus.PROCESSING);
                     String keyNow=generateRedisKey(finalMaintainWorkflow);
                     CompletableFuture.runAsync(()->{
                         String cacheWL=gson.toJson(finalMaintainWorkflow);
@@ -231,7 +290,7 @@ public class workflowServiceImpl implements workflowService{
                         log.info(String.format("start to persist DB for thread:%s",keyNow));
                         mongoTemplate.insert(finalMaintainWorkflow, workflowCollection);
                     });
-                    redisTemplate.opsForValue().increment(key+"-num",(Long)WLNum);
+
                     redisTemplate.delete(key+"-lock");
                     log.info(String.format("successfully start workflow:%s"),finalMaintainWorkflow.getWorkflowName());
                     return new serverResponse(responseEnum.SWORKFLOW_SUCCESS.getStatusCode(),responseEnum.SWORKFLOW_SUCCESS.getStatusDescription(),finalMaintainWorkflow);
@@ -242,7 +301,7 @@ public class workflowServiceImpl implements workflowService{
                     workflow finalMaintainWorkflow = runWorkflow;
                     Object WLNum=redisTemplate.opsForValue().get(key+"-num");
                     finalMaintainWorkflow.setWorkflowName(maintainWorkflow.getWorkflowName()+"_"+(String)WLNum);
-//                    finalMaintainWorkflow.getOwnJobs()[0].setStatus(JobStatus.PROCESSING);
+                    finalMaintainWorkflow.setStatus(JobStatus.PROCESSING);
                     String keyNow=generateRedisKey(finalMaintainWorkflow);
                     CompletableFuture.runAsync(()->{
                         String cacheWL=gson.toJson(finalMaintainWorkflow);

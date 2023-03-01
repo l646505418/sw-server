@@ -53,8 +53,15 @@ public class jobServiceImpl implements jobService{
 
     @Override
     public workflow updateStatus(runTimeJob updateJob) {
-        workflow currentWorkFlow =updateJob.getWorkflow();
-        currentWorkFlow.getOwnJobs().get(updateJob.getJob().getJobName()).setStatus(updateJob.getStatus());
+        Query query=new Query();
+        query.addCriteria(Criteria.where("ownerId").is(updateJob.getJob().getOwnerId()).and("projectName").is(updateJob.getProjectName())
+                .and("serviceName").is(updateJob.getServiceName()).and("workflowName").is(updateJob.getWorkflowName()));
+        workflow currentWorkFlow =mongoTemplate.findOne(query,workflow.class,"workflowInfo");
+        if(currentWorkFlow.getOwnJobs().containsKey(updateJob.getJob().getJobName()))
+            currentWorkFlow.getOwnJobs().get(updateJob.getJob().getJobName()).setStatus(updateJob.getStatus());
+        else
+            currentWorkFlow.getOwnJobs().put(updateJob.getJob().getJobName(),updateJob);
+
         return currentWorkFlow;
     }
 

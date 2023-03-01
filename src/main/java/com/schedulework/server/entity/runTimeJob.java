@@ -21,6 +21,15 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class runTimeJob {
     private  job job;
     private String parentJobName;
-    private workflow workflow;
+    private String serviceName;
+    private String projectName;
+    private String workflowName;
     private String status;
+
+
+
+    public runTimeJob changeStatus(String status){
+        this.setStatus(status);
+        return this;
+    }
 }

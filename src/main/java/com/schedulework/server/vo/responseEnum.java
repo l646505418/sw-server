@@ -22,11 +22,13 @@ public enum responseEnum {
 //    EDIT_SUCCESS(2003,"userInfo is null"),
     SWORKFLOW_SUCCESS(20005,"start success"),
     UJOB_STATUS_SUCCESS(20006,"update success"),
+    FWORKFLOW_SUCCESS(20007,"finish success"),
     RJOb_FAILED(30001,"failed add job"),
     RWORKFLOW_FAILED(30003,"failed add workflow"),
     SWORKFLOW_FAILED(30004,"start failed"),
     UJOB_STATUS_FAILED(30005,"update failed"),
     EDIT_FAILED(3002,"userInfo is null"),
+    FWORKFLOW_FAILED(30006,"finish failed"),
     USER_NOT_FOUND(4001,"user not found "),
     BAD_REQUEST(4002,"userInfo is null"),
 

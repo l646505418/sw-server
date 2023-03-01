@@ -50,13 +50,16 @@ jobService jobService;
         return workflowService.modifyWorkflow(modifyWorkflow);
     }
     @PostMapping(path = "/start/workflow")
-    public serverResponse startWorkflow(@RequestBody workflow startedWorkflow, ServerResponse response){
+    public serverResponse startWorkflow(@RequestBody workflow startedWorkflow){
         if(startedWorkflow.getOwnJobs().keySet().isEmpty()){
             return new serverResponse(responseEnum.SWORKFLOW_FAILED.getStatusCode(),responseEnum.SWORKFLOW_FAILED.getStatusDescription(),"there are no jobs in this workflow");
         }
         return workflowService.startWorkflow(startedWorkflow);
     }
-
+    @PostMapping(path = "/finish/workflow")
+    public serverResponse finishWorkflow(@RequestBody workflow finishWorkflow){
+        return workflowService.finishWorkflow(finishWorkflow);
+    }
 
     @PostMapping(path = "/change/JobStaus")
     public serverResponse changeJobStatus(@RequestBody runTimeJob currentJob){

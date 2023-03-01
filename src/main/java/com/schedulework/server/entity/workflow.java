@@ -15,7 +15,6 @@ import java.util.HashMap;
  */
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
 @Document(collation = "workflowInfo")
 public class workflow {
@@ -23,5 +22,10 @@ public class workflow {
     private String serviceName;
     private String projectName;
     private Long ownerId;
+    private String status;
     private HashMap<String,runTimeJob> ownJobs;
+
+    public workflow() {
+        this.status="REGIST";
+    }
 }
