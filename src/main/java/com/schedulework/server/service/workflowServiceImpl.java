@@ -277,8 +277,8 @@ public class workflowServiceImpl implements workflowService{
                         Object WLNum = redisTemplate.opsForValue().get(key + "-num");
                         redisTemplate.opsForValue().increment(key + "-num", (Long) WLNum);
                         finalMaintainWorkflow.setWorkflowName(maintainWorkflow.getWorkflowName() + "_" + (String) WLNum);
+                        finalMaintainWorkflow.setStatus(JobStatus.PROCESSING);
                     }
-                    finalMaintainWorkflow.setStatus(JobStatus.PROCESSING);
                     String keyNow=generateRedisKey(finalMaintainWorkflow);
                     CompletableFuture.runAsync(()->{
                         String cacheWL=gson.toJson(finalMaintainWorkflow);
