@@ -1,0 +1,22 @@
+spring:
+    #  profiles:
+    #    active: lcoal
+    config:
+        activate:
+            on-profile:
+                - dev
+    data:
+        mongodb:
+            uri: mongodb+srv://lijinming:lijinmin@ljm0.e9q9sme.mongodb.net/?retryWrites=true&w=majority
+    redis:
+        host: redis-18044.c60.us-west-1-2.ec2.cloud.redislabs.com
+        port: 18044
+        username: l646505418@gmail.com
+        password: ljm19991115
+        database: schedule-work
+server:
+    port: 9002
+
+
+
+
