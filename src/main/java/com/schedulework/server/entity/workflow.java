@@ -11,6 +11,9 @@ import java.util.HashMap;
 /**
  * @author:Li Jinming
  * @Description:
+ * for workflow status is "creating", that means we directly run the workflow in local code
+ * instead of registering the workflow before on web client;
+ * for workflow status is "pending" , that means we already register the workflow on web client
  * @date:2023-02-22
  */
 
